@@ -2,8 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import feedparser
+import socket
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenteCazachollos/1.0)"}
+
+# Timeout global para feedparser
+socket.setdefaulttimeout(15)
 
 def extraer_precio(texto):
     m = re.search(r"(\d+[.,]?\d*)\s*€", texto.replace(",", "."))
@@ -18,12 +22,15 @@ def extraer_precio(texto):
 
 def parse_rss(url, tipo="paquetes"):
     ofertas = []
-    feed = feedparser.parse(url)
-    for entry in feed.entries:
-        titulo = entry.title
-        link = entry.link
-        precio = extraer_precio(entry.title)
-        ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": tipo})
+    try:
+        feed = feedparser.parse(url)
+        for entry in feed.entries:
+            titulo = entry.title
+            link = entry.link
+            precio = extraer_precio(entry.title)
+            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": tipo})
+    except Exception as e:
+        print(f"[ERROR] No se pudo parsear RSS {url}: {e}")
     return ofertas
 
 def scrape_chollometro_rss():
@@ -46,9 +53,13 @@ def scrape_rumbo_rss():
 
 def scrape_carrefour():
     url = "https://www.carrefour.es/ofertas"
-    res = requests.get(url, headers=HEADERS)
-    if res.status_code != 200:
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=15)
+        res.raise_for_status()
+    except Exception as e:
+        print(f"[ERROR] No se pudo obtener Carrefour: {e}")
         return []
+
     soup = BeautifulSoup(res.text, "lxml")
     ofertas = []
     for item in soup.select(".product-card"):
@@ -82,3 +93,10 @@ def obtener_ofertas():
             seen.add(key)
             dedup.append(o)
     return dedup
+
+# ------------------- Testeo rápido -------------------
+if __name__ == "__main__":
+    ofertas = obtener_ofertas()
+    print(f"Se han encontrado {len(ofertas)} ofertas.")
+    for o in ofertas[:10]:
+        print(o)
