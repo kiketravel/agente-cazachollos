@@ -1,0 +1,29 @@
+name: Ejecutar Agente Cazachollos
+
+on:
+  schedule:
+    - cron: '0 10 * * 1' # Lunes a las 10:00 UTC
+  workflow_dispatch:
+
+jobs:
+  run_agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ejecutar agente
+        run: |
+          python scraper.py
+          python filtrar.py
+          python enviar_email.py
