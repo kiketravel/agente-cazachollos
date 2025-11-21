@@ -17,9 +17,6 @@ else:
 # Obtener ofertas actuales
 ofertas = obtener_ofertas()
 
-# Filtrar por origen Madrid
-ofertas = [o for o in ofertas if "Madrid" in o.get("titulo","")]
-
 # Organizar por categoría
 cats = {c: [] for c in CATEGORIES}
 for o in ofertas:
@@ -63,9 +60,4 @@ for c in CATEGORIES:
             if idx == 1:
                 rank_emoji = "🥇"
             elif idx == 2:
-                rank_emoji = "🥈"
-            elif idx == 3:
-                rank_emoji = "🥉"
-            else:
-                rank_emoji = "⭐"
-            f.write(f"{rank_emoji} {idx}. {titulo}\n💶 Precio: {precio_txt}\n🔗 [Ver oferta]({link})\n\n")
+                rank_emoji = "_
