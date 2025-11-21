@@ -2,7 +2,6 @@ import os
 from scraper import obtener_ofertas
 
 def filtrar_chollos(ofertas):
-    # Definir criterios para lo que consideras un chollo
     palabras_clave = ["chollo", "oferta", "descuento", "último minuto", "paquete"]
     buenos = []
     for titulo, link in ofertas:
