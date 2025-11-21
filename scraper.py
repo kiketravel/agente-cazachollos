@@ -6,8 +6,8 @@ import socket
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenteCazachollos/1.0)"}
 
-# Timeout global para feedparser
-socket.setdefaulttimeout(15)
+# Establecer timeout global para feedparser
+socket.setdefaulttimeout(30)
 
 def extraer_precio(texto):
     m = re.search(r"(\d+[.,]?\d*)\s*€", texto.replace(",", "."))
@@ -17,8 +17,6 @@ def extraer_precio(texto):
         except:
             return None
     return None
-
-# ------------------- RSS Parsers -------------------
 
 def parse_rss(url, tipo="paquetes"):
     ofertas = []
@@ -33,57 +31,97 @@ def parse_rss(url, tipo="paquetes"):
         print(f"[ERROR] No se pudo parsear RSS {url}: {e}")
     return ofertas
 
+# Fuentes RSS reales o semi confiables
 def scrape_chollometro_rss():
     url = "https://www.chollometro.com/rss"
     return parse_rss(url, tipo="paquetes")
 
-def scrape_holidayguru_rss():
-    url = "https://www.holidayguru.es/rss"
-    return parse_rss(url, tipo="paquetes")
+def scrape_flightdeal_rss():
+    url = "https://www.theflightdeal.com/feed"
+    return parse_rss(url, tipo="vuelos")
 
-def scrape_travelzoo_rss():
-    url = "https://www.travelzoo.com/es/rss"
-    return parse_rss(url, tipo="paquetes")
+# NOTA: no he encontrado un RSS oficial y 100% confiable para HolidayGuru con ofertas de viaje recientes
+# Podrías suscribirte a su boletín, pero como RSS lo dejo comentado o como fallback.
+# def scrape_holidayguru_rss():
+#     url = "https://www.holidayguru.es/rss"
+#     return parse_rss(url, tipo="paquetes")
 
-def scrape_rumbo_rss():
-    url = "https://www.rumbo.es/rss/chollos.xml"
-    return parse_rss(url, tipo="vuelo_hotel")
-
-# ------------------- Carrefour Scraper -------------------
-
+# Scrapeo sencillo para Carrefour (ofertas de viaje)
 def scrape_carrefour():
-    url = "https://www.carrefour.es/ofertas"
+    url = "https://www.viajes.carrefour.es/viajes-chollos"
     try:
-        res = requests.get(url, headers=HEADERS, timeout=15)
+        res = requests.get(url, headers=HEADERS, timeout=30)
         res.raise_for_status()
     except Exception as e:
-        print(f"[ERROR] No se pudo obtener Carrefour: {e}")
+        print(f"[ERROR] No se pudo obtener Carrefour viajes: {e}")
         return []
 
     soup = BeautifulSoup(res.text, "lxml")
     ofertas = []
-    for item in soup.select(".product-card"):
-        titulo_tag = item.select_one(".product-name")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
+    # selector tentativa para las ofertas
+    for item in soup.select("a"):  
+        text = item.get_text(" ", strip=True)
+        precio = extraer_precio(text)
+        link = item.get("href", "")
+        if link and precio:
             if not link.startswith("http"):
-                link = "https://www.carrefour.es" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
+                link = "https://www.viajes.carrefour.es" + link
+            ofertas.append({"titulo": text, "link": link, "precio": precio, "tipo": "paquetes"})
     return ofertas
 
-# ------------------- Obtener todas las ofertas -------------------
+def scrape_rumbo_chollos():
+    url = "https://www.rumbo.es/es/ofertas-especiales/chollo-viaje.html"
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=30)
+        res.raise_for_status()
+    except Exception as e:
+        print(f"[ERROR] No se pudo obtener Rumbo: {e}")
+        return []
+
+    soup = BeautifulSoup(res.text, "lxml")
+    ofertas = []
+    for item in soup.select("li.offer-item, .oferta, .chollo"):
+        text = item.get_text(" ", strip=True)
+        precio = extraer_precio(text)
+        a = item.find("a", href=True)
+        link = a["href"] if a else None
+        if link and precio:
+            if not link.startswith("http"):
+                link = "https://www.rumbo.es" + link
+            ofertas.append({"titulo": text, "link": link, "precio": precio, "tipo": "paquetes"})
+    return ofertas
+
+def scrape_logitravel():
+    url = "https://www.logitravel.com/viajes/chollos/"
+    try:
+        res = requests.get(url, headers=HEADERS, timeout=30)
+        res.raise_for_status()
+    except Exception as e:
+        print(f"[ERROR] No se pudo obtener Logitravel: {e}")
+        return []
+
+    soup = BeautifulSoup(res.text, "lxml")
+    ofertas = []
+    for item in soup.select(".deal-card, .chollo-item"):
+        text = item.get_text(" ", strip=True)
+        precio = extraer_precio(text)
+        a = item.find("a", href=True)
+        link = a["href"] if a else None
+        if link and precio:
+            if not link.startswith("http"):
+                link = "https://www.logitravel.com" + link
+            ofertas.append({"titulo": text, "link": link, "precio": precio, "tipo": "paquetes"})
+    return ofertas
 
 def obtener_ofertas():
     todas = []
     todas.extend(scrape_chollometro_rss())
-    todas.extend(scrape_holidayguru_rss())
-    todas.extend(scrape_travelzoo_rss())
-    todas.extend(scrape_rumbo_rss())
+    todas.extend(scrape_flectdeal_rss() if False else [])  # corregir nombre si se usa
+    todas.extend(scrape_flightdeal_rss())
     todas.extend(scrape_carrefour())
+    todas.extend(scrape_rumbo_chollos())
+    todas.extend(scrape_logitravel())
+
     # deduplicar
     seen = set()
     dedup = []
@@ -94,9 +132,9 @@ def obtener_ofertas():
             dedup.append(o)
     return dedup
 
-# ------------------- Testeo rápido -------------------
+# Para test local
 if __name__ == "__main__":
     ofertas = obtener_ofertas()
-    print(f"Se han encontrado {len(ofertas)} ofertas.")
-    for o in ofertas[:10]:
+    print(f"Ofertas encontradas: {len(ofertas)}")
+    for o in ofertas[:20]:
         print(o)
