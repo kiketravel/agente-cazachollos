@@ -60,7 +60,7 @@ def scrape_liligo():
             ofertas.append((titulo, link))
         return ofertas
     except Exception:
-        return []  # En caso de fallo, retornar lista vacía
+        return []
 
 def obtener_ofertas():
     todas = []
