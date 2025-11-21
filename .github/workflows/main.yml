@@ -1,37 +1,37 @@
-name: Agente CazaChollos
+name: Agente Cazachollos
 
 on:
   schedule:
-    # Ejecuta todos los viernes a las 20:00 UTC
-    - cron: "0 20 * * FRI"
-  workflow_dispatch: # Permite ejecutar manualmente
+    # Cada viernes a las 20:00 UTC
+    - cron: '0 20 * * 5'
+  workflow_dispatch: # permite ejecutar manualmente
 
 jobs:
-  build-and-run:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests beautifulsoup4 lxml feedparser
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests beautifulsoup4 lxml feedparser
 
-      - name: Run scraper
-        run: python scraper.py
+    - name: Run scraper
+      run: python scraper.py
 
-      - name: Run filtrar
-        run: python filtrar.py
+    - name: Filter and generate TOP 10
+      run: python filtrar.py
 
-      - name: Send Telegram
-        env:
-          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python enviar_telegram.py
+    - name: Send to Telegram
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: python enviar_telegram.py
