@@ -2,35 +2,33 @@ name: Agente Cazachollos
 
 on:
   schedule:
-    - cron: '0 9 * * 1' # Lunes 09:00 UTC
+    - cron: '0 20 * * 5'
   workflow_dispatch:
 
 jobs:
   run_agent:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
-
-      - name: Install deps
-        run: |
+          python-version: '3.11'
+      - run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Run scraper
-        run: python scraper.py
-
-      - name: Filter & score (generate summaries)
-        run: python filtrar.py
-
-      - name: Send summaries to Telegram
+      - run: python scraper.py
+      - run: python filtrar.py
+      - run: python enviar_telegram.py
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python enviar_telegram.py
+      - name: Commit history.json
+        run: |
+          git config user.name 'github-actions'
+          git config user.email 'github-actions@github.com'
+          git add history.json
+          git commit -m 'Actualización automática de history.json' || echo 'No changes'
+          git push
