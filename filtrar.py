@@ -1,26 +1,21 @@
-import os
 from scraper import obtener_ofertas
 
+PALABRAS = ["chollo", "oferta", "descuento", "rebaja", "barato", "último", "promo"]
+
 def filtrar_chollos(ofertas):
-    palabras_clave = ["chollo", "oferta", "descuento", "último minuto", "paquete"]
     buenos = []
     for titulo, link in ofertas:
-        text = titulo.lower()
-        if any(p in text for p in palabras_clave):
-            buenos.append((titulo, link))
+        t = titulo.lower()
+        if any(p in t for p in PALABRAS):
+            buenos.append((titulo.strip(), link))
     return buenos
 
 def guardar_resumen(chollos):
-    if not chollos:
-        with open("resumen_chollos.txt", "w", encoding="utf-8") as f:
-            f.write("No se han encontrado chollos relevantes esta vez.")
-        return
     with open("resumen_chollos.txt", "w", encoding="utf-8") as f:
-        for titulo, link in chollos:
-            f.write(f"{titulo} — {link}\n")
+        if not chollos:
+            f.write("🔎 *No se han encontrado chollos esta vez.*")
+            return
 
-if __name__ == "__main__":
-    ofertas = obtener_ofertas()
-    buenos = filtrar_chollos(ofertas)
-    guardar_resumen(buenos)
-    print(f"Encontrados {len(buenos)} chollos.")
+        f.write("🔥 *Chollos de viajes encontrados esta semana:*\n\n")
+        for titulo, link in chollos:
+            f.write(f"• *{titulo}*\n  👉 {link}\n\n")
