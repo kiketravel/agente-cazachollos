@@ -36,4 +36,4 @@ for c in CATEGORIES:
 with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
     json.dump(history, f, ensure_ascii=False, indent=2)
 
-# Aquí metes tu lógica de scoring / ranking para escribir resumenes por categoría
+# Aquí metes tu lógica de scoring / ranking para crear resumenes por categoría
