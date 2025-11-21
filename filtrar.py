@@ -4,46 +4,106 @@ from scraper import obtener_ofertas
 
 PALABRAS = ["chollo", "oferta", "descuento", "rebaja", "barato", "último", "promo"]
 
-def filtrar_chollos(ofertas):
-    buenos = []
-    for titulo, link in ofertas:
-        t = (titulo or "").lower()
-        if any(p in t for p in PALABRAS):
-            buenos.append((titulo.strip(), link or ""))
-    return buenos
+# Reglas simples para clasificar
+def clasificar(titulo):
+    t = titulo.lower()
 
-def guardar_resumen(chollos):
-    try:
-        with open("resumen_chollos.txt", "w", encoding="utf-8") as f:
-            if not chollos:
-                f.write("🔎 *No se han encontrado chollos relevantes esta vez.*")
-                return
-            f.write("🔥 *Chollos de viajes encontrados esta semana:*\n\n")
-            for i, (titulo, link) in enumerate(chollos, start=1):
-                # Asegurar que link sea una URL legible
-                line = f"• *{titulo}*\n  👉 {link}\n\n"
-                f.write(line)
-    except Exception as e:
-        print("Error al guardar resumen:", e)
-        print(traceback.format_exc())
-        # En caso de fallo al escribir el fichero, escribir un fallback mínimo
-        try:
-            with open("resumen_chollos.txt", "w", encoding="utf-8") as f:
-                f.write("🔎 *No se han podido generar chollos por un error interno.*")
-        except:
-            pass
+    # Vuelos
+    if "vuelo" in t or "vuelos" in t or "flight" in t:
+        return "vuelos"
+
+    # Hoteles
+    if "hotel" in t and "vuelo" not in t:
+        return "hoteles"
+
+    # Paquetes
+    if "paquete" in t or "circuito" in t or "tour" in t or "crucero" in t:
+        return "paquetes"
+
+    # Vuelo + Hotel
+    if "vuelo" in t and "hotel" in t:
+        return "vuelo_hotel"
+
+    # fallback
+    if "hotel" in t:
+        return "hoteles"
+    if "vuelo" in t:
+        return "vuelos"
+    return "paquetes"
+
+
+def es_chollo(titulo):
+    t = titulo.lower()
+    return any(p in t for p in PALABRAS)
+
+
+def filtrar_y_clasificar(ofertas):
+    cats = {
+        "vuelos": [],
+        "paquetes": [],
+        "vuelo_hotel": [],
+        "hoteles": []
+    }
+
+    for titulo, link in ofertas:
+        if not titulo:
+            continue
+        if not es_chollo(titulo):
+            continue
+
+        categoria = clasificar(titulo)
+        cats[categoria].append((titulo.strip(), link))
+
+    return cats
+
+
+def top10_por_categoria(categorias):
+    resultado = {}
+    for cat, items in categorias.items():
+        # Limitar a 10
+        resultado[cat] = items[:10]
+    return resultado
+
+
+def guardar_resumen(cats):
+    with open("resumen_chollos.txt", "w", encoding="utf-8") as f:
+        f.write("🔥 **TOP CHOLLOS DE VIAJES – Resumen Semanal**\n\n")
+
+        secciones = [
+            ("vuelos", "✈️ *TOP 10 Vuelos baratos*"),
+            ("vuelo_hotel", "🌍 *TOP 10 Vuelo + Hotel*"),
+            ("hoteles", "🏨 *TOP 10 Hoteles*"),
+            ("paquetes", "🧳 *TOP 10 Paquetes*")
+        ]
+
+        for key, titulo in secciones:
+            f.write(f"{titulo}\n")
+            ofertas = cats.get(key, [])
+            if not ofertas:
+                f.write("• No se han encontrado chollos esta semana.\n\n")
+                continue
+
+            for idx, (t, link) in enumerate(ofertas, start=1):
+                f.write(f"{idx}. *{t}*\n   👉 {link}\n")
+
+            f.write("\n")
+
 
 if __name__ == "__main__":
     try:
         ofertas = obtener_ofertas()
         print(f"[filtrar] ofertas obtenidas: {len(ofertas)}")
-        buenos = filtrar_chollos(ofertas)
-        print(f"[filtrar] chollos filtrados: {len(buenos)}")
-        guardar_resumen(buenos)
-        print("resumen_chollos.txt creado.")
+
+        categorias = filtrar_y_clasificar(ofertas)
+        topcats = top10_por_categoria(categorias)
+
+        guardar_resumen(topcats)
+
+        print("resumen_chollos.txt creado con TOP 10 por categoría.")
+
     except Exception as e:
         print("Error en filtrar.py:", e)
-        # asegurarse de que el resumen existe aunque haya fallo
+        print(traceback.format_exc())
+
         with open("resumen_chollos.txt", "w", encoding="utf-8") as f:
-            f.write("🔎 *No se han podido generar chollos por un error interno.*")
-        raise
+            f.write("⚠️ Error interno generando el resumen semanal.")
