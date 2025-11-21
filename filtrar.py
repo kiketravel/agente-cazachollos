@@ -60,4 +60,9 @@ for c in CATEGORIES:
             if idx == 1:
                 rank_emoji = "🥇"
             elif idx == 2:
-                rank_emoji = "_
+                rank_emoji = "🥈"
+            elif idx == 3:
+                rank_emoji = "🥉"
+            else:
+                rank_emoji = "⭐"  # <-- CORREGIDO
+            f.write(f"{
