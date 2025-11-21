@@ -6,6 +6,7 @@ HISTORY_FILE = 'history.json'
 MAX_HISTORY = 300
 CATEGORIES = ["vuelos", "vuelo_hotel", "hoteles", "paquetes"]
 
+history = {}
 if os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
         history = json.load(f)
@@ -16,9 +17,9 @@ ofertas = obtener_ofertas()
 
 cats = {c: [] for c in CATEGORIES}
 for o in ofertas:
-    t = o.get('tipo') or 'paquetes'
+    t = o.get("tipo") or "paquetes"
     if t not in CATEGORIES:
-        t = 'paquetes'
+        t = "paquetes"
     cats[t].append(o)
 
 for c in CATEGORIES:
@@ -26,7 +27,7 @@ for c in CATEGORIES:
     seen = set()
     deduped = []
     for x in combined:
-        key = (x.get('titulo',''), x.get('link',''))
+        key = (x.get("titulo", ""), x.get("link", ""))
         if key not in seen:
             seen.add(key)
             deduped.append(x)
@@ -35,4 +36,4 @@ for c in CATEGORIES:
 with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
     json.dump(history, f, ensure_ascii=False, indent=2)
 
-# Aquí se puede añadir la función que crea resumen_X.txt con ranking relativo y emojis
+# Aquí metes tu lógica de scoring / ranking para escribir resumenes por categoría
