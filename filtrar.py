@@ -1,16 +1,27 @@
 import os
+from scraper import obtener_ofertas
 
 def filtrar_chollos(ofertas):
-    palabras_clave = ["vuelo", "hotel", "viaje"]
+    # Definir criterios para lo que consideras un chollo
+    palabras_clave = ["chollo", "oferta", "descuento", "último minuto", "paquete"]
     buenos = []
     for titulo, link in ofertas:
-        if any(p in titulo.lower() for p in palabras_clave):
+        text = titulo.lower()
+        if any(p in text for p in palabras_clave):
             buenos.append((titulo, link))
     return buenos
 
+def guardar_resumen(chollos):
+    if not chollos:
+        with open("resumen_chollos.txt", "w", encoding="utf-8") as f:
+            f.write("No se han encontrado chollos relevantes esta vez.")
+        return
+    with open("resumen_chollos.txt", "w", encoding="utf-8") as f:
+        for titulo, link in chollos:
+            f.write(f"{titulo} — {link}\n")
+
 if __name__ == "__main__":
-    import scraper
-    ofertas = scraper.obtener_ofertas()
+    ofertas = obtener_ofertas()
     buenos = filtrar_chollos(ofertas)
-    for t, l in buenos:
-        print("CHOLLO:", t, l)
+    guardar_resumen(buenos)
+    print(f"Encontrados {len(buenos)} chollos.")
