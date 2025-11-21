@@ -2,7 +2,7 @@ name: Agente Cazachollos
 
 on:
   schedule:
-    - cron: '0 9 * * 1'  # Cada lunes a las 09:00 UTC
+    - cron: '0 9 * * 1'
   workflow_dispatch:
 
 jobs:
