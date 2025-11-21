@@ -22,8 +22,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Ejecutar agente
+      - name: Ejecutar scraper y filtrar
         run: |
           python scraper.py
           python filtrar.py
-          python enviar_email.py
+
+      - name: Enviar email
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python enviar_email.py
+
