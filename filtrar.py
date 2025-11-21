@@ -4,8 +4,9 @@ from scraper import obtener_ofertas
 
 HISTORY_FILE = 'history.json'
 MAX_HISTORY = 300
-CATEGORIES = ["vuelos", "paquetes"]
+CATEGORIES = ["vuelos", "paquetes", "vuelo_hotel", "hoteles"]
 
+# Cargar histórico
 history = {}
 if os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
@@ -13,8 +14,13 @@ if os.path.exists(HISTORY_FILE):
 else:
     history = {c: [] for c in CATEGORIES}
 
+# Obtener ofertas actuales
 ofertas = obtener_ofertas()
 
+# Filtrar por origen Madrid
+ofertas = [o for o in ofertas if "Madrid" in o.get("titulo","")]
+
+# Organizar por categoría
 cats = {c: [] for c in CATEGORIES}
 for o in ofertas:
     t = o.get("tipo", "paquetes")
@@ -22,12 +28,13 @@ for o in ofertas:
         t = "paquetes"
     cats[t].append(o)
 
+# Actualizar histórico
 for c in CATEGORIES:
     combined = cats[c] + history.get(c, [])
     seen = set()
     deduped = []
     for x in combined:
-        key = (x.get("titulo", ""), x.get("link", ""))
+        key = (x.get("titulo",""), x.get("link",""))
         if key not in seen:
             seen.add(key)
             deduped.append(x)
@@ -36,14 +43,29 @@ for c in CATEGORIES:
 with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
     json.dump(history, f, ensure_ascii=False, indent=2)
 
-# Generar resumen simple
+# Generar resumen TOP 10 por categoría
 for c in CATEGORIES:
     fname = f"resumen_{c}.txt"
+    ofertas_cat = cats[c]
+    # Ordenar por precio ascendente
+    ofertas_cat = [o for o in ofertas_cat if o.get("precio") is not None]
+    ofertas_cat.sort(key=lambda x: x.get("precio"))
+    top10 = ofertas_cat[:10]
+
     with open(fname, "w", encoding="utf-8") as f:
-        f.write(f"**{c.upper()}**\n\n")
-        for o in cats[c][:10]:
-            titulo = o.get("titulo", "–")
-            link = o.get("link", "")
+        f.write(f"✈️ *TOP {len(top10)} {c.upper()}* ✈️\n\n")
+        for idx, o in enumerate(top10, start=1):
+            titulo = o.get("titulo","–")
+            link = o.get("link","")
             precio = o.get("precio")
             precio_txt = f"{precio:.0f}€" if precio else "–"
-            f.write(f"- {titulo} — {precio_txt}\n  {link}\n")
+            # Emoji según ranking
+            if idx == 1:
+                rank_emoji = "🥇"
+            elif idx == 2:
+                rank_emoji = "🥈"
+            elif idx == 3:
+                rank_emoji = "🥉"
+            else:
+                rank_emoji = "⭐"
+            f.write(f"{rank_emoji} {idx}. {titulo}\n💶 Precio: {precio_txt}\n🔗 [Ver oferta]({link})\n\n")
