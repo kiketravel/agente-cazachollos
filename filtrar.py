@@ -44,7 +44,6 @@ with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
 for c in CATEGORIES:
     fname = f"resumen_{c}.txt"
     ofertas_cat = cats[c]
-    # Ordenar por precio ascendente
     ofertas_cat = [o for o in ofertas_cat if o.get("precio") is not None]
     ofertas_cat.sort(key=lambda x: x.get("precio"))
     top10 = ofertas_cat[:10]
@@ -56,7 +55,6 @@ for c in CATEGORIES:
             link = o.get("link","")
             precio = o.get("precio")
             precio_txt = f"{precio:.0f}€" if precio else "–"
-            # Emoji según ranking
             if idx == 1:
                 rank_emoji = "🥇"
             elif idx == 2:
@@ -64,5 +62,6 @@ for c in CATEGORIES:
             elif idx == 3:
                 rank_emoji = "🥉"
             else:
-                rank_emoji = "⭐"  # <-- CORREGIDO
-            f.write(f"{
+                rank_emoji = "⭐"
+            # Cadena bien cerrada
+            f.write(f"{rank_emoji} {idx}. {titulo}\n💶 Precio: {precio_txt}\n🔗 [Ver oferta]({link})\n\n")
