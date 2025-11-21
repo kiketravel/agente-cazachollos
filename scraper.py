@@ -5,197 +5,106 @@ import re
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenteCazachollos/1.0)"}
 
 def extraer_precio(texto):
-    m = re.search(r'\d+[,.]?\d*', texto.replace(',', '.'))
-    return float(m.group().replace(',', '.')) if m else 0.0
+    m = re.search(r"(\d+[.,]?\d*)\s*€", texto.replace(",", "."))
+    if m:
+        try:
+            return float(m.group(1))
+        except:
+            return None
+    return None
 
-def scrape_chollometro():
-    url = "https://www.chollometro.com/"
+def scrape_chollo_viajes():
+    url = "https://www.chollo-viajes.com/chollos-vuelos/"
     res = requests.get(url, headers=HEADERS)
+    if res.status_code != 200:
+        return []
     soup = BeautifulSoup(res.text, "lxml")
     ofertas = []
-    for item in soup.select(".threadGrid"):
-        titulo_tag = item.select_one(".thread-title")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".thread-price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = "https://www.chollometro.com" + link_tag["href"]
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
+    # Suponemos que las ofertas están en elementos <article> o similares
+    for item in soup.select("article.offer, div.oferta, .oferta-viaje"):
+        titulo = item.get_text(strip=True)
+        precio = extraer_precio(titulo)
+        a = item.find("a", href=True)
+        link = a["href"] if a else None
+        ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "vuelos"})
     return ofertas
 
 def scrape_holidayguru():
-    url = "https://www.holidayguru.es/"
+    url = "https://www.holidayguru.es/ofertas-ultimo-minuto/"
     res = requests.get(url, headers=HEADERS)
+    if res.status_code != 200:
+        return []
     soup = BeautifulSoup(res.text, "lxml")
     ofertas = []
-    for item in soup.select(".deal-card"):
-        titulo_tag = item.select_one(".deal-title")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".deal-price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.holidayguru.es" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
+    for item in soup.select(".offer-item, .deal-card"):
+        titulo = item.get_text(" ", strip=True)
+        precio = extraer_precio(titulo)
+        a = item.find("a", href=True)
+        link = a["href"] if a else None
+        ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
     return ofertas
 
-def scrape_travelzoo():
-    url = "https://www.travelzoo.com/es/"
+def scrape_rumbo():
+    url = "https://www.rumbo.es/es/ofertas-especiales/chollo-viaje.html"
     res = requests.get(url, headers=HEADERS)
+    if res.status_code != 200:
+        return []
     soup = BeautifulSoup(res.text, "lxml")
     ofertas = []
-    for item in soup.select(".deal"):
-        titulo_tag = item.select_one(".deal-title")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".deal-price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.travelzoo.com" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
-    return ofertas
-
-def scrape_buscounchollo():
-    url = "https://www.buscounchollo.com/"
-    res = requests.get(url, headers=HEADERS)
-    soup = BeautifulSoup(res.text, "lxml")
-    ofertas = []
-    for item in soup.select(".oferta-item"):
-        titulo_tag = item.select_one(".titulo")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".precio")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.buscounchollo.com" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
-    return ofertas
-
-def scrape_destinia():
-    url = "https://www.destinia.com/"
-    res = requests.get(url, headers=HEADERS)
-    soup = BeautifulSoup(res.text, "lxml")
-    ofertas = []
-    for item in soup.select(".product-card"):
-        titulo_tag = item.select_one(".product-title")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".product-price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.destinia.com" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "vuelo_hotel"})
-    return ofertas
-
-def scrape_atrapalo():
-    url = "https://www.atrapalo.com/"
-    res = requests.get(url, headers=HEADERS)
-    soup = BeautifulSoup(res.text, "lxml")
-    ofertas = []
-    for item in soup.select(".product-item"):
-        titulo_tag = item.select_one(".product-title")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".product-price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.atrapalo.com" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
-    return ofertas
-
-def scrape_carrefour():
-    url = "https://www.carrefour.es/ofertas"
-    res = requests.get(url, headers=HEADERS)
-    soup = BeautifulSoup(res.text, "lxml")
-    ofertas = []
-    for item in soup.select(".product-card"):
-        titulo_tag = item.select_one(".product-name")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.carrefour.es" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
+    # Ejemplo: lo más probable es que las ofertas estén en <li> o <div> con clase especial
+    for item in soup.select(".oferta, .chollo, li.offer-item"):
+        titulo = item.get_text(" ", strip=True)
+        precio = extraer_precio(titulo)
+        a = item.find("a", href=True)
+        link = a["href"] if a else None
+        if link and link.startswith("/"):
+            link = "https://www.rumbo.es" + link
+        ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
     return ofertas
 
 def scrape_logitravel():
-    url = "https://www.logitravel.com/"
+    url = "https://www.logitravel.com/viajes/chollos/"
     res = requests.get(url, headers=HEADERS)
+    if res.status_code != 200:
+        return []
     soup = BeautifulSoup(res.text, "lxml")
     ofertas = []
-    for item in soup.select(".deal-card"):
-        titulo_tag = item.select_one(".deal-title")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".deal-price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.logitravel.com" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "vuelo_hotel"})
+    for item in soup.select(".chollo-item, .deal-card"):
+        titulo = item.get_text(" ", strip=True)
+        precio = extraer_precio(titulo)
+        a = item.find("a", href=True)
+        link = a["href"] if a else None
+        ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "vuelo_hotel"})
     return ofertas
 
-def scrape_ebooking():
-    url = "https://www.ebooking.com/"
+def scrape_nautalia():
+    url = "https://www.nautaliaviajes.com/chollos/"
     res = requests.get(url, headers=HEADERS)
+    if res.status_code != 200:
+        return []
     soup = BeautifulSoup(res.text, "lxml")
     ofertas = []
-    for item in soup.select(".deal-item"):
-        titulo_tag = item.select_one(".title")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.ebooking.com" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "hoteles"})
-    return ofertas
-
-def scrape_skyscanner():
-    url = "https://www.skyscanner.net/deals"
-    res = requests.get(url, headers=HEADERS)
-    soup = BeautifulSoup(res.text, "lxml")
-    ofertas = []
-    for item in soup.select(".deal-card"):
-        titulo_tag = item.select_one(".deal-title")
-        link_tag = item.select_one("a")
-        precio_tag = item.select_one(".deal-price")
-        if titulo_tag and link_tag and precio_tag:
-            titulo = titulo_tag.text.strip()
-            link = link_tag.get("href", "")
-            if not link.startswith("http"):
-                link = "https://www.skyscanner.net" + link
-            precio = extraer_precio(precio_tag.text)
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "vuelos"})
+    for item in soup.select("div.product, div.oferta-chollo, li.trip-item"):
+        titulo = item.get_text(" ", strip=True)
+        precio = extraer_precio(titulo)
+        a = item.find("a", href=True)
+        link = a["href"] if a else None
+        ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": "paquetes"})
     return ofertas
 
 def obtener_ofertas():
     todas = []
-    todas.extend(scrape_chollometro())
+    todas.extend(scrape_chollo_viajes())
     todas.extend(scrape_holidayguru())
-    todas.extend(scrape_travelzoo())
-    todas.extend(scrape_buscounchollo())
-    todas.extend(scrape_destinia())
-    todas.extend(scrape_atrapalo())
-    todas.extend(scrape_carrefour())
+    todas.extend(scrape_rumbo())
     todas.extend(scrape_logitravel())
-    todas.extend(scrape_ebooking())
-    todas.extend(scrape_skyscanner())
-    return todas
+    todas.extend(scrape_nautalia())
+    # deduplicar
+    seen = set()
+    dedup = []
+    for o in todas:
+        key = (o.get("titulo"), o.get("link"))
+        if key not in seen:
+            seen.add(key)
+            dedup.append(o)
+    return dedup
