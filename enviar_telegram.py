@@ -6,24 +6,30 @@ TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 BASE = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-for cat in ["vuelos", "paquetes"]:
+CATEGORIES = ["vuelos", "paquetes", "vuelo_hotel", "hoteles"]
+
+for cat in CATEGORIES:
     fname = f"resumen_{cat}.txt"
     if not os.path.exists(fname):
         msg = f"No se han generado ofertas para **{cat}**."
-    else:
-        with open(fname, "r", encoding="utf-8") as f:
-            msg = f.read()
+        requests.post(BASE, json={"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"})
+        continue
 
-    # dividir si es muy largo
-    partes = msg.split("\n\n")
-    texto = ""
-    for p in partes:
-        if len(texto) + len(p) + 4 < 3800:
-            texto += p + "\n\n"
+    with open(fname, "r", encoding="utf-8") as f:
+        contenido = f.read()
+
+    # Telegram limita a 4096 caracteres, dividimos si es necesario
+    mensajes = []
+    while contenido:
+        if len(contenido) <= 3800:
+            mensajes.append(contenido)
+            break
         else:
-            requests.post(BASE, json={"chat_id": CHAT_ID, "text": texto, "parse_mode": "Markdown"})
-            time.sleep(1)
-            texto = p + "\n\n"
-    if texto:
-        requests.post(BASE, json={"chat_id": CHAT_ID, "text": texto, "parse_mode": "Markdown"})
+            # Cortamos por líneas
+            corte = contenido[:3800].rfind("\n")
+            mensajes.append(contenido[:corte])
+            contenido = contenido[corte:].lstrip("\n")
+
+    for m in mensajes:
+        requests.post(BASE, json={"chat_id": CHAT_ID, "text": m, "parse_mode": "Markdown"})
         time.sleep(1)
