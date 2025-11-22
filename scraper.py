@@ -28,35 +28,17 @@ def scrape_trabber():
                 except:
                     pass
             tipo = "vuelos"
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": tipo})
+            if precio and "Madrid" in titulo:
+                ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": tipo})
     except Exception as e:
         print(f"No se pudo parsear RSS {url}: {e}")
     return ofertas
 
-def scrape_carrefour():
-    url = "https://www.carrefour.es/ofertas"
-    ofertas = []
-    try:
-        res = requests.get(url, timeout=30)
-        res.raise_for_status()
-        soup = BeautifulSoup(res.text, "lxml")
-        items = soup.select(".product-card")
-        for item in items:
-            titulo = item.get_text().strip()
-            link = url
-            precio = None
-            tipo = "paquetes"
-            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": tipo})
-    except Exception as e:
-        print(f"No se pudo obtener Carrefour: {e}")
-    return ofertas
-
-# Añadir más scrapers aquí según necesites
+# Otros scrapers pueden añadirse aquí según necesites
 
 def obtener_ofertas():
     todas = []
     todas.extend(scrape_trabber())
-    todas.extend(scrape_carrefour())
     return todas
 
 def actualizar_history(nuevas):
