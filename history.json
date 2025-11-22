@@ -1,6 +1,15 @@
 {
-  "vuelos": [],
-  "vuelo_hotel": [],
-  "hoteles": [],
-  "paquetes": []
+  "vuelos": [
+    {"titulo": "100 € Madrid - París (3 días)", "link": "https://ejemplo.com/oferta1", "precio": 100.0, "tipo": "vuelos"},
+    {"titulo": "120 € Madrid - Berlín (4 días)", "link": "https://ejemplo.com/oferta2", "precio": 120.0, "tipo": "vuelos"}
+  ],
+  "hoteles": [
+    {"titulo": "Hotel 3* Madrid centro 2 noches", "link": "https://ejemplo.com/hotel1", "precio": 80.0, "tipo": "hoteles"}
+  ],
+  "paquetes": [
+    {"titulo": "Paquete Madrid - Roma 3 días 2 noches", "link": "https://ejemplo.com/paquete1", "precio": 250.0, "tipo": "paquetes"}
+  ],
+  "vuelo_hotel": [
+    {"titulo": "Vuelo + Hotel Madrid - Lisboa 3 días", "link": "https://ejemplo.com/vh1", "precio": 300.0, "tipo": "vuelo_hotel"}
+  ]
 }
