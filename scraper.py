@@ -4,6 +4,10 @@ import feedparser
 import json
 import os
 import re
+import sys
+
+# Desactivar buffering para print
+sys.stdout.reconfigure(line_buffering=True)
 
 # Archivo de history
 history_file = "history.json"
@@ -26,23 +30,23 @@ def actualizar_history(ofertas):
         history[tipo] = history[tipo][-300:]  # últimos 300
     with open(history_file, "w", encoding="utf-8") as f:
         json.dump(history, f, indent=2, ensure_ascii=False)
-    print("[INFO] history.json actualizado con las últimas ofertas.")
+    print("[INFO] history.json actualizado con las últimas ofertas.", flush=True)
 
 # ---------------------------
 # Scrapers de ejemplo
 # ---------------------------
 
 def scrape_carrefour():
-    print("[INFO] Iniciando scraper Carrefour...")
+    print("[INFO] Iniciando scraper Carrefour...", flush=True)
     url = "https://www.carrefour.es/ofertas"
     ofertas = []
     try:
         res = requests.get(url, headers=HEADERS, timeout=15)
         res.raise_for_status()
-        print("[INFO] Carrefour descargado correctamente.")
+        print("[INFO] Carrefour descargado correctamente.", flush=True)
         soup = BeautifulSoup(res.text, "lxml")
         items = soup.select("div.productCard")
-        print(f"[INFO] Carrefour: {len(items)} items encontrados en la página.")
+        print(f"[INFO] Carrefour: {len(items)} items encontrados en la página.", flush=True)
         for it in items:
             try:
                 titulo_tag = it.select_one("a.productCard-title")
@@ -54,20 +58,20 @@ def scrape_carrefour():
                 precio = float(p_text)
                 ofertas.append({"titulo": t, "link": it.a["href"], "precio": precio, "tipo": "paquetes"})
             except Exception as e:
-                print(f"[WARN] Error parseando un item de Carrefour: {e}")
+                print(f"[WARN] Error parseando un item de Carrefour: {e}", flush=True)
     except requests.exceptions.RequestException as e:
-        print(f"[ERROR] No se pudo obtener Carrefour: {e}")
-    print(f"[INFO] Carrefour: {len(ofertas)} ofertas extraídas.")
+        print(f"[ERROR] No se pudo obtener Carrefour: {e}", flush=True)
+    print(f"[INFO] Carrefour: {len(ofertas)} ofertas extraídas.", flush=True)
     return ofertas
 
 def scrape_trabber():
-    print("[INFO] Iniciando scraper Trabber (vuelos de prueba)...")
+    print("[INFO] Iniciando scraper Trabber (vuelos de prueba)...", flush=True)
     ofertas = []
     try:
         url = "https://www.trabber.es/ofertas-vuelos"
         res = requests.get(url, headers=HEADERS, timeout=15)
         res.raise_for_status()
-        print("[INFO] Trabber descargado correctamente.")
+        print("[INFO] Trabber descargado correctamente.", flush=True)
         # Ejemplo: siempre devolver 2 vuelos
         ofertas.append({
             "titulo": "119,00 € Madrid - Oslo (5 días)",
@@ -82,12 +86,12 @@ def scrape_trabber():
             "tipo": "vuelos"
         })
     except requests.exceptions.RequestException as e:
-        print(f"[ERROR] No se pudo obtener Trabber: {e}")
-    print(f"[INFO] Trabber: {len(ofertas)} ofertas extraídas.")
+        print(f"[ERROR] No se pudo obtener Trabber: {e}", flush=True)
+    print(f"[INFO] Trabber: {len(ofertas)} ofertas extraídas.", flush=True)
     return ofertas
 
 def scrape_rss(url, tipo):
-    print(f"[INFO] Iniciando RSS scraper para {tipo} desde {url}")
+    print(f"[INFO] Iniciando RSS scraper para {tipo} desde {url}", flush=True)
     ofertas = []
     try:
         feed = feedparser.parse(url)
@@ -101,14 +105,14 @@ def scrape_rss(url, tipo):
                     precio = float(m.group(1).replace(",","."))
                 ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": tipo})
             except Exception as e:
-                print(f"[WARN] Error parseando RSS item {url}: {e}")
+                print(f"[WARN] Error parseando RSS item {url}: {e}", flush=True)
     except Exception as e:
-        print(f"[ERROR] No se pudo parsear RSS {url}: {e}")
-    print(f"[INFO] RSS {tipo}: {len(ofertas)} ofertas extraídas.")
+        print(f"[ERROR] No se pudo parsear RSS {url}: {e}", flush=True)
+    print(f"[INFO] RSS {tipo}: {len(ofertas)} ofertas extraídas.", flush=True)
     return ofertas
 
 def obtener_ofertas():
-    print("[INFO] Iniciando obtención de ofertas...")
+    print("[INFO] Iniciando obtención de ofertas...", flush=True)
     todas = []
 
     # Scrapers HTML
@@ -127,7 +131,7 @@ def obtener_ofertas():
         todas.extend(scrape_rss(url, tipo))
 
     todas = [o for o in todas if o.get("precio")]
-    print(f"[INFO] Total de ofertas con precio encontradas: {len(todas)}")
+    print(f"[INFO] Total de ofertas con precio encontradas: {len(todas)}", flush=True)
     return todas
 
 # ---------------------------
@@ -135,9 +139,10 @@ def obtener_ofertas():
 # ---------------------------
 
 if __name__ == "__main__":
+    print("[INFO] Ejecutando scraper.py directamente...", flush=True)
     ofertas = obtener_ofertas()
     actualizar_history(ofertas)
-    print("[INFO] Ofertas extraídas de ejemplo (máx 5):")
+    print("[INFO] Ofertas extraídas de ejemplo (máx 5):", flush=True)
     for o in ofertas[:5]:
-        print(o)
-    print("[INFO] Scraper finalizado.")
+        print(o, flush=True)
+    print("[INFO] Scraper finalizado.", flush=True)
