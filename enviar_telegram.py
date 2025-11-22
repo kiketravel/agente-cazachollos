@@ -1,35 +1,40 @@
 import os
 import requests
-import time
 
-TOKEN = os.environ.get("TELEGRAM_TOKEN")
-CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
-BASE = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
-CATEGORIES = ["vuelos", "paquetes", "vuelo_hotel", "hoteles"]
+URL = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-for cat in CATEGORIES:
-    fname = f"resumen_{cat}.txt"
-    if not os.path.exists(fname):
-        msg = f"No se han generado ofertas para **{cat}**."
-        requests.post(BASE, json={"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"})
-        continue
+def enviar(mensaje):
+    if not mensaje.strip():
+        return
 
-    with open(fname, "r", encoding="utf-8") as f:
-        contenido = f.read()
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": mensaje,
+        "parse_mode": "HTML"  # seguro incluso con emojis y links
+    }
 
-    # Telegram limita a 4096 caracteres, dividimos si es necesario
-    mensajes = []
-    while contenido:
-        if len(contenido) <= 3800:
-            mensajes.append(contenido)
-            break
-        else:
-            # Cortamos por líneas
-            corte = contenido[:3800].rfind("\n")
-            mensajes.append(contenido[:corte])
-            contenido = contenido[corte:].lstrip("\n")
+    try:
+        r = requests.post(URL, json=payload, timeout=20)
+        r.raise_for_status()
+    except Exception as e:
+        print("ERROR enviando Telegram:", e)
 
-    for m in mensajes:
-        requests.post(BASE, json={"chat_id": CHAT_ID, "text": m, "parse_mode": "Markdown"})
-        time.sleep(1)
+def enviar_archivo(nombre):
+    if not os.path.exists(nombre):
+        print(f"NO existe {nombre}")
+        return
+
+    with open(nombre, "r", encoding="utf-8") as f:
+        contenido = f.read().strip()
+
+    if contenido:
+        enviar(contenido)
+    else:
+        print(f"{nombre} está vacío")
+
+if __name__ == "__main__":
+    enviar_archivo("resultado_vuelos.txt")
+    enviar_archivo("resultado_paquetes.txt")
