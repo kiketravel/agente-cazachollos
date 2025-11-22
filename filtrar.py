@@ -34,8 +34,8 @@ if __name__ == "__main__":
     ofertas = obtener_ofertas()
     actualizar_history(ofertas)
 
-    # Filtrar ofertas válidas y origen Madrid
-    ofertas = [o for o in ofertas if o.get("precio") and "Madrid" in o["titulo"]]
+    # Filtrar ofertas válidas y origen Madrid si aplica
+    ofertas = [o for o in ofertas if o.get("precio") and (o["tipo"]!="vuelos" or "Madrid" in o["titulo"])]
 
     tipos = {
         "vuelos": [o for o in ofertas if o["tipo"] == "vuelos"],
