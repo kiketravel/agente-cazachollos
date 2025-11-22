@@ -51,14 +51,14 @@ def scrape_carrefour():
         print(f"No se pudo obtener Carrefour: {e}")
     return ofertas
 
+# Añadir más scrapers aquí según necesites
+
 def obtener_ofertas():
     todas = []
     todas.extend(scrape_trabber())
     todas.extend(scrape_carrefour())
-    # Se pueden añadir más scrapers aquí
     return todas
 
-# Guardar en history
 def actualizar_history(nuevas):
     for o in nuevas:
         tipo = o["tipo"]
