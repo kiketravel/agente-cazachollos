@@ -13,7 +13,6 @@ def score_oferta(oferta, tipo):
         return 0
     precio_min = min(precios)
     precio_max = max(precios)
-    # cuanto más barato respecto al histórico, mejor (0-1)
     score = (precio_max - oferta['precio']) / (precio_max - precio_min + 1e-6)
     return score
 
@@ -35,24 +34,21 @@ if __name__ == "__main__":
     ofertas = obtener_ofertas()
     actualizar_history(ofertas)
 
-    # Filtrar ofertas válidas
-    ofertas = [o for o in ofertas if o.get("precio")]
-
-    for o in ofertas:
-        o["titulo_lower"] = o["titulo"].lower()
+    # Filtrar ofertas válidas y origen Madrid
+    ofertas = [o for o in ofertas if o.get("precio") and "Madrid" in o["titulo"]]
 
     tipos = {
-        "vuelos":       [o for o in ofertas if o["tipo"] == "vuelos" and "madrid" in o["titulo_lower"]],
-        "hoteles":      [o for o in ofertas if o["tipo"] == "hoteles" and "madrid" in o["titulo_lower"]],
-        "paquetes":     [o for o in ofertas if o["tipo"] == "paquetes" and "madrid" in o["titulo_lower"]],
-        "vuelo_hotel":  [o for o in ofertas if o["tipo"] in ("vuelo_hotel","vuelo+hotel") and "madrid" in o["titulo_lower"]],
+        "vuelos": [o for o in ofertas if o["tipo"] == "vuelos"],
+        "hoteles": [o for o in ofertas if o["tipo"] == "hoteles"],
+        "paquetes": [o for o in ofertas if o["tipo"] == "paquetes"],
+        "vuelo_hotel": [o for o in ofertas if o["tipo"] in ("vuelo_hotel","vuelo+hotel")],
     }
 
-    # Ordenar por scoring relativo
+    # Ordenar por scoring relativo y TOP 10
     for k,v in tipos.items():
         tipos[k] = sorted(v, key=lambda x: score_oferta(x, k), reverse=True)[:10]
 
-    # Generar archivos TOP 10
+    # Generar archivos siempre
     escribir_archivo("top10_vuelos.txt",      "✈️ TOP 10 Vuelos desde Madrid", tipos["vuelos"])
     escribir_archivo("top10_hoteles.txt",     "🏨 TOP 10 Hoteles desde Madrid", tipos["hoteles"])
     escribir_archivo("top10_paquetes.txt",    "🎒 TOP 10 Paquetes desde Madrid", tipos["paquetes"])
