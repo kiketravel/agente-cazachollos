@@ -1,145 +1,76 @@
 import requests
 from bs4 import BeautifulSoup
 import feedparser
-import re
-import socket
+import json
+import os
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; AgenteCazachollos/1.1)"}
-socket.setdefaulttimeout(25)
+history_file = "history.json"
 
-def contiene_madrid(texto):
-    texto = texto.lower()
-    claves = ["madrid", "mad", "desde madrid", "from madrid", "from mad", "origin mad"]
-    return any(c in texto for c in claves)
+# Cargar historial existente
+if os.path.exists(history_file):
+    with open(history_file, "r", encoding="utf-8") as f:
+        history = json.load(f)
+else:
+    history = {"vuelos": [], "hoteles": [], "paquetes": [], "vuelo_hotel": []}
 
-def extraer_precio(texto):
-    texto = texto.replace(",", ".")
-    m = re.search(r"(\d{2,4}(?:\.\d{1,2})?)\s*€", texto)
-    if m:
-        try:
-            return float(m.group(1))
-        except:
-            return None
-    return None
-
-def parse_rss(url, tipo="paquetes", exige_madrid=True):
+def scrape_trabber():
+    url = "https://www.trabber.es/rss/ofertas.xml"
     ofertas = []
     try:
         feed = feedparser.parse(url)
         for entry in feed.entries:
-            titulo = entry.get("title", "")
-            desc = entry.get("description", "")
-            link = entry.get("link", "")
-
-            full = (titulo + " " + desc).strip()
-            if exige_madrid and not contiene_madrid(full):
-                continue
-
-            precio = extraer_precio(full)
-            if precio is None:
-                continue
-
-            ofertas.append({
-                "titulo": titulo.strip(),
-                "link": link,
-                "precio": precio,
-                "tipo": tipo
-            })
-
+            titulo = entry.title
+            link = entry.link
+            precio = None
+            if "€" in titulo:
+                try:
+                    precio = float(titulo.split("€")[0].replace(",", ".").replace("\xa0","").strip())
+                except:
+                    pass
+            tipo = "vuelos"
+            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": tipo})
     except Exception as e:
-        print("RSS ERROR", url, e)
-
+        print(f"No se pudo parsear RSS {url}: {e}")
     return ofertas
-
-# -------- FUENTES -------- #
-
-def scrape_fly4free():
-    return parse_rss(
-        "https://www.fly4free.com/feed/",
-        tipo="vuelos",
-        exige_madrid=True
-    )
-
-def scrape_theflightdeal():
-    return parse_rss(
-        "https://www.theflightdeal.com/feed/",
-        tipo="vuelos",
-        exige_madrid=True
-    )
-
-def scrape_trabber():
-    # Este feed está específicamente filtrado ya para MAD
-    return parse_rss(
-        "https://www.trabber.es/feeds/offers?from_city=MAD&daily_offers=2&type=rss_2.0",
-        tipo="vuelos",
-        exige_madrid=False  # ya viene filtrado en el feed
-    )
-
-def scrape_holidaypirates():
-    return parse_rss(
-        "https://www.holidaypirates.com/rss",
-        tipo="paquetes",
-        exige_madrid=True
-    )
 
 def scrape_carrefour():
+    url = "https://www.carrefour.es/ofertas"
     ofertas = []
-    url = "https://www.viajes.carrefour.es/viajes-chollos"
-
     try:
-        res = requests.get(url, headers=HEADERS, timeout=25)
+        res = requests.get(url, timeout=30)
         res.raise_for_status()
-    except Exception:
-        return ofertas
-
-    soup = BeautifulSoup(res.text, "lxml")
-
-    for card in soup.select("a"):
-        texto = card.get_text(" ", strip=True)
-        link = card.get("href", "")
-
-        if not contiene_madrid(texto):
-            continue
-
-        precio = extraer_precio(texto)
-        if precio is None:
-            continue
-
-        if link and not link.startswith("http"):
-            link = "https://www.viajes.carrefour.es" + link
-
-        ofertas.append({
-            "titulo": texto,
-            "link": link,
-            "precio": precio,
-            "tipo": "paquetes"
-        })
-
+        soup = BeautifulSoup(res.text, "lxml")
+        items = soup.select(".product-card")
+        for item in items:
+            titulo = item.get_text().strip()
+            link = url
+            precio = None
+            tipo = "paquetes"
+            ofertas.append({"titulo": titulo, "link": link, "precio": precio, "tipo": tipo})
+    except Exception as e:
+        print(f"No se pudo obtener Carrefour: {e}")
     return ofertas
-
-# -------- MASTER -------- #
 
 def obtener_ofertas():
     todas = []
-    todas += scrape_fly4free()
-    todas += scrape_theflightdeal()
-    todas += scrape_trabber()
-    todas += scrape_holidaypirates()
-    todas += scrape_carrefour()
+    todas.extend(scrape_trabber())
+    todas.extend(scrape_carrefour())
+    # Se pueden añadir más scrapers aquí
+    return todas
 
-    # dedupe
-    seen = set()
-    final = []
-    for o in todas:
-        key = (o["titulo"], o["link"])
-        if key not in seen:
-            seen.add(key)
-            final.append(o)
-
-    return final
+# Guardar en history
+def actualizar_history(nuevas):
+    for o in nuevas:
+        tipo = o["tipo"]
+        history[tipo] = [o] + history.get(tipo, [])
+        if len(history[tipo]) > 300:
+            history[tipo] = history[tipo][:300]
 
 if __name__ == "__main__":
-    o = obtener_ofertas()
-    print("OFERTAS ENCONTRADAS:", len(o))
-    for x in o:
-        print(x)
+    ofertas = obtener_ofertas()
+    actualizar_history(ofertas)
+    with open(history_file, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2, ensure_ascii=False)
+    print(f"OFERTAS ENCONTRADAS: {len(ofertas)}")
+    for o in ofertas:
+        print(o)
