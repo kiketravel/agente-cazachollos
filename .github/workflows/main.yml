@@ -3,7 +3,7 @@ name: Agente Cazachollos
 on:
   schedule:
     # Cada viernes a las 20:00 UTC
-    - cron: '0 20 * * 5'
+#    - cron: '0 20 * * 5'
   workflow_dispatch: # permite ejecutar manualmente
 
 jobs:
@@ -30,8 +30,8 @@ jobs:
     - name: Filter and generate TOP 10
       run: python filtrar.py
 
-    - name: Send to Telegram
-      env:
-        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      run: python enviar_telegram.py
+#    - name: Send to Telegram
+#      env:
+#        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+#        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+#      run: python enviar_telegram.py
