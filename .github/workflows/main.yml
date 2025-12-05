@@ -3,7 +3,7 @@ name: Agente Cazachollos
 on:
   schedule:
     # Cada viernes a las 20:00 UTC
-#    - cron: '0 20 * * 5'
+    - cron: '0 20 * * 5'
   workflow_dispatch: # permite ejecutar manualmente
 
 jobs:
